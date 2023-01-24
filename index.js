@@ -10,7 +10,7 @@ var secret =
   "ENiSA2nDVuhsmPnQq979b1cUGJd_dStCYeU1WjKG28Ity8E_Qo9Lh0_7gMLlbivm0_NvQI-S51YfrQ1m";
 
 //allow parsing of JSON bodies
-app.use(cors());
+app.use(cors("http://localhost:3000"));
 app.use(bodyParser.json());
 
 //configure for sandbox environment
@@ -38,7 +38,7 @@ app.get("/create", function (req, res) {
     transactions: [
       {
         amount: {
-          total: req.query.paypalAmount,
+          total: req.query.paypalAmount > 0 ? req.query.paypalAmount : "10",
           // total: "12",
           currency: "USD",
         },
@@ -62,7 +62,7 @@ app.get("/create", function (req, res) {
 
       //if redirect url present, redirect user
       if (links.hasOwnProperty("approval_url")) {
-        res.redirect(links["approval_url"].href);
+        res.json({ forwardLink: links["approval_url"].href });
       } else {
         console.error("no redirect URI present");
       }
