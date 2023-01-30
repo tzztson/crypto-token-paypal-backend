@@ -9,26 +9,26 @@ const { formatEther } = require("ethers/lib/utils");
 
 const abiSource = require("./abi.json");
 
-const senderAccount = "0x8b257EBe1bb097C63E3fbcb2e4354abaBf1A538A";
+const senderAccount = "0xA1FE4119Ab59076B5d9062A32f9433f986F53130"; // your admin wallet adderss
 const senderPrivateKey =
-  "38aff756cc06a19741074b9dec79424612d07ba6301c8218e9dc7bb40fa81a33";
+  "3882ff459d57e2686bcc5bae19e85b1d973c5ffaf4959ee6a6b69e374f035987"; // your private key
 const INFURA_ID = "ca11249dabe247c1a6e0877c24376dda";
 const provider = new ethers.providers.JsonRpcProvider(
   `https://goerli.infura.io/v3/${INFURA_ID}`
 );
 
 const client_id =
-  "AR8-AT4aaOkFmVx0JA_k3mztM5L8IKb8FoUv1i4hmHg_FOhCokxK83u9i1inrzBKtjjxrntnkp8I3Izf";
+  "ARarXQ0FfqaGbdtIO71s4z-Dyxt5lA0ZfPJk9bq7Vg-wM9oDsWlU76W1bPPDKvYSfgQiQq_5E4nTxnOS"; // your paypal client id
 const secret =
-  "ENiSA2nDVuhsmPnQq979b1cUGJd_dStCYeU1WjKG28Ity8E_Qo9Lh0_7gMLlbivm0_NvQI-S51YfrQ1m";
+  "EHTkWlTnCqL9LWG51AsQlfp0WhBk3_Aey4ptGlyJgCqHfzjxoLGoJINwc-luW3-gupRCECOD3ohY8oWS"; // your paypal secret
 
 //allow parsing of JSON bodies
-app.use(cors("http://localhost:3000"));
+app.use(cors());
 app.use(bodyParser.json());
 
 //configure for sandbox environment
 paypal.configure({
-  mode: "sandbox", //sandbox or live
+  mode: "live", //sandbox or live
   client_id: client_id,
   client_secret: secret,
 });
@@ -39,9 +39,13 @@ app.get("/create", function (req, res) {
   //build PayPal payment request
   const receiverAccount = req.query.walletAddress;
   const requestedAmount = req.query.paypalAmount / 1.5;
+  const tokenChain = req.query.tokenChain;
   const wallet = new ethers.Wallet(senderPrivateKey, provider);
 
   const TokenContract = new ethers.Contract(
+    // tokenChain === "Ethereum"
+    //   ? "0x94f2eA0374d771801818Ad7b4A4F4552253F7A57"
+    //   : "0xE972FFE67d612Aa258670525650e1419D439e050",
     abiSource.token.address,
     abiSource.token.abi,
     provider
@@ -56,7 +60,6 @@ app.get("/create", function (req, res) {
       ethers.utils.parseUnits(requestedAmount.toString())
     );
     await tx.wait();
-    console.log(formatEther(balance.toString()));
   };
   sendToken();
   console.log(receiverAccount);
