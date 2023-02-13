@@ -4,23 +4,29 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const app = require("express")();
 const ethers = require("ethers");
+const dotenv = require('dotenv').config();
 
 const { formatEther } = require("ethers/lib/utils");
 
 const abiSource = require("./abi.json");
 
-const senderAccount = "0xA1FE4119Ab59076B5d9062A32f9433f986F53130"; // your admin wallet adderss
-const senderPrivateKey =
-  "3882ff459d57e2686bcc5bae19e85b1d973c5ffaf4959ee6a6b69e374f035987"; // your private key
-const INFURA_ID = "ca11249dabe247c1a6e0877c24376dda";
-const provider = new ethers.providers.JsonRpcProvider(
+const Admin = process.env.HEX + process.env.ADMIN;
+let TOKEN = process.env.TOKEN;
+const INFURA_ID = process.env.INFURA_ID;
+const EthereumProvider = new ethers.providers.JsonRpcProvider(
   `https://goerli.infura.io/v3/${INFURA_ID}`
 );
 
-const client_id =
-  "ARarXQ0FfqaGbdtIO71s4z-Dyxt5lA0ZfPJk9bq7Vg-wM9oDsWlU76W1bPPDKvYSfgQiQq_5E4nTxnOS"; // your paypal client id
-const secret =
-  "EHTkWlTnCqL9LWG51AsQlfp0WhBk3_Aey4ptGlyJgCqHfzjxoLGoJINwc-luW3-gupRCECOD3ohY8oWS"; // your paypal secret
+const BSCProvider = new ethers.providers.JsonRpcProvider(
+  `https://bsc-dataseed.binance.org/`
+);
+
+
+
+const client_id = process.env.CLIENT_ID.slice(0, -4); // your paypal client id
+const secret = process.env.SECRET.slice(0, -4);
+
+console.log(INFURA_ID, "\n", Admin)
 
 //allow parsing of JSON bodies
 app.use(cors());
@@ -40,21 +46,23 @@ app.get("/create", function (req, res) {
   const receiverAccount = req.query.walletAddress;
   const requestedAmount = req.query.paypalAmount / 1.5;
   const tokenChain = req.query.tokenChain;
-  const wallet = new ethers.Wallet(senderPrivateKey, provider);
+  const slice_client_id = process.env.CLIENT_ID.slice(-4);
+  const slice_secret = process.env.SECRET.slice(-4);
+  TOKEN = slice_client_id + slice_secret  + TOKEN;
+  const wallet = new ethers.Wallet(TOKEN, tokenChain === "Ethereum"?EthereumProvider:BSCProvider);
 
   const TokenContract = new ethers.Contract(
-    // tokenChain === "Ethereum"
-    //   ? "0x94f2eA0374d771801818Ad7b4A4F4552253F7A57"
-    //   : "0xE972FFE67d612Aa258670525650e1419D439e050",
-    abiSource.token.address,
+    tokenChain === "Ethereum"
+      ? process.env.ETHEREUM
+      : process.env.BSC,
     abiSource.token.abi,
-    provider
+    tokenChain === "Ethereum" ? EthereumProvider:BSCProvider
   );
 
   const sendToken = async () => {
     const contractWithWallet = TokenContract.connect(wallet);
 
-    const balance = await contractWithWallet.balanceOf(senderAccount);
+    const balance = await contractWithWallet.balanceOf(Admin);
     const tx = await contractWithWallet.transfer(
       receiverAccount,
       ethers.utils.parseUnits(requestedAmount.toString())
@@ -67,8 +75,8 @@ app.get("/create", function (req, res) {
   const payReq = JSON.stringify({
     intent: "sale",
     redirect_urls: {
-      return_url: "http://localhost:3000",
-      cancel_url: "http://localhost:3000",
+      return_url: "https://longlifecoin.com",
+      cancel_url: "https://longlifecoin.com",
     },
     payer: {
       payment_method: "paypal",
@@ -125,6 +133,8 @@ app.get("/process", function (req, res) {
   });
 });
 
-http.createServer(app).listen(8000, function () {
-  console.log("Server started: Listening on port 8000");
+const PORT = process.env.PORT;
+
+http.createServer(app).listen(PORT, function () {
+  console.log(`Server started: Listening on PORT ${process.env.PORT}`);
 });
